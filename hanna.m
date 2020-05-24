@@ -24,7 +24,7 @@ cross_section = load("data/cross_section.tsv");
 % functions
 p = @(E, m) sqrt((E/c).^2 - (m*c)^2);
 gamma = @(E, m) E/(m*c^2);
-v = @(E, m) c*sqrt(1-1./gamma(E, m).^2);
+v = @(E, m) c*sqrt(1 - 1./gamma(E, m).^2);
 
 
 E_experiment = 250e6*eV;         % (250 MeV)
@@ -40,7 +40,7 @@ v_e = v(E_experiment, m_e);
 beta = v(E_experiment, m_e)/c;
 
 cross_ruth = @(E, theta) (Z_e*Z_Ca40*alpha*hbar*c)^2./(4*beta^4*E^2*sin(theta/2).^4);
-cross_mott = @(E, theta) cross_ruth(E, theta).*(1-beta^2*sin(theta/2).^2);
+cross_mott = @(E, theta) cross_ruth(E, theta).*(1 - beta^2*sin(theta/2).^2);
 
 
 theta_vect = linspace(0, pi, 100);
