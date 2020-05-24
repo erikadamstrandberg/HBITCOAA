@@ -53,7 +53,7 @@ plot(r, rho_ch(X_0, r))
 
 %% Theoretical cross-section
 % Relativistic kinetic energy for a electron
-p_e = @(E) sqrt(E/c^2 - m_e^2*c^2);
+p_e = @(E) sqrt((E/c).^2 - m_e^2*c^2); 
 
 % Difference of p_e before and after collision with Ca40
 % Assumes the heavy core to be stationary and not recoil from collision 
