@@ -17,11 +17,12 @@ Z_e = 1;
 E_250MeV = E_e(250);
 theta = load("data/theta.tsv");
 cross_section = load("data/cross_section.tsv");
-
+meas_error = load("data/meas_error.tsv");
 
 
 %%
 % functions
+rho_ch = @(X, r) X(1)./(1 + exp((r-X(2))./X(3)));
 p = @(E, m) sqrt((E/c).^2 - (m*c)^2);
 gamma = @(E, m) E/(m*c^2);
 v = @(E, m) c*sqrt(1 - 1./gamma(E, m).^2);
@@ -51,3 +52,25 @@ clf
 hold on 
 plot(theta_vect, log(cross_section))
 plot(theta_vect, log(cross_section_ruth))
+
+
+%%
+
+%Xi2 = @(X) sum(((cross_theo(E_experiment, theta, X) - cross_section)./meas_error).^2);
+
+integrand = @(X, r) rho_ch(X, r).*r.^2;
+total_charge = @(X) (4*pi/p_e)*integral(@(r) integrand(X, r), 0, 1e-10);
+
+eps = 1; %1e-6;
+constraint = @(X) ((Z_Ca40 - total_charge(X))/eps).^2;
+
+
+X_0 = [q_e*0.08e45, 4e-15, 0.1e-15];
+R = linspace(0, 5e-15, 100); 
+
+
+clf
+plot(R, integrand(X_0, R));
+
+constraint(X_0)
+
