@@ -1,4 +1,3 @@
-
 %% Constants
 % Fundamental
 hbar = 6.62607004e-34/(2*pi);
@@ -9,7 +8,7 @@ alpha = 1/137;
 
 % Unit conversion
 eV = 1.60217662e-19;
-millibarn = 1e31;
+millibarn_per_sr = 1e31/(2*pi);
 
 % Functions
 gamma = @(E) E/(m_e*c^2);
@@ -23,6 +22,7 @@ E_250MeV = 250e6*eV;
 theta = load("data/theta.tsv");
 theta_rad = theta*pi/180;
 cross_section = load("data/cross_section.tsv");
+meas_error = load("data/meas_error.tsv");
 
 %% Relativitic electron?
 % For a classical electron gamma approx 1
@@ -37,9 +37,9 @@ v_e_experiment = v(E_250MeV)/c;
 rho_ch = @(X, r) X(1)./(1 + exp((r-X(2))./X(3)));
 
 % Create initial guesses for the fitting!
-% Rho_0
-% a is in the middle of the drop
-% b is how sharp the drop falls off
+% rho_0 highest proton density
+% a middle of fall off
+% b sharpness of the falls off
 rho_0 = q_e*0.08e45;
 a_0 = 4e-15;  
 b_0 = 0.1e-15;
@@ -57,26 +57,39 @@ p_e = @(E) sqrt((E/c).^2 - m_e^2*c^2);
 
 % Difference of p_e before and after collision with Ca40
 % Assumes the heavy core to be stationary and not recoil from collision 
-q_diff = @(E, theta) 4*p_e(E).^2.*sin(theta/2).^2;
+q_diff = @(E, theta) sqrt(4*p_e(E).^2.*sin(theta/2).^2);
 
 % Form factor integral broken into two pieces
-form_const = @(E, theta) 4*pi*hbar./(Z_Ca40*q_diff(E,theta));
-integrand = @(X, r, E, theta) r.*rho_ch(X, r).*sin(sqrt(q_diff(E, theta).*r/hbar));
-form_integral = @(X, E, theta) integral(@(r) integrand(X, r, E, theta), 0, 1000e-15);
+form_const      = @(E, theta) 4*pi*hbar./(Z_Ca40*q_diff(E,theta)*q_e);
+integrand       = @(X, r, E, theta) r.*rho_ch(X, r).*sin(q_diff(E, theta).*r/hbar);
+form_integral   = @(X, E, theta) integral(@(r) integrand(X, r, E, theta), 0, 100e-10,'ArrayValued',true);
+formfactor      = @(X, E, theta) form_integral(X, E, theta).*form_const(E_250MeV, theta);
 
-n = length(theta_rad);
-formfactor = zeros(n, 1);
-for i = 1:n
-    formfactor(i) = form_integral(X_0, E_250MeV, theta_rad(i))*form_const(E_250MeV, theta_rad(i));
-end
+% The Rutherford and Mott cross-sections
+cross_ruth      = @(E, theta) (Z_e*Z_Ca40*alpha*hbar*c)^2./(4*beta(E)^4*E^2*sin(theta/2).^4);
+cross_mott      = @(E, theta) cross_ruth(E, theta).*(1 - beta(E)^2*sin(theta/2).^2);
 
-cross_ruth = @(E, theta) (Z_e*Z_Ca40*alpha*hbar*c)^2./(4*beta(E)^4*E^2*sin(theta/2).^4);
-cross_mott = @(E, theta) cross_ruth(E, theta).*(1 - beta(E)^2*sin(theta/2).^2);
-cross_theo = cross_mott(E_250MeV, theta_rad).*abs(formfactor).^2;
+% Together they make the theoretical cross-section to be fitted against the
+% measurement!
+cross_theo      = @(E, theta, X) cross_mott(E_250MeV, theta_rad).*abs(formfactor(X_0,E_250MeV,theta)).^2;
 
 figure(2)
 clf; hold on;
-plot(theta_rad, log10(cross_theo*millibarn))
+plot(theta_rad, log10(cross_theo(E_250MeV,theta_rad,X_0)*millibarn_per_sr),'black')
+plot(theta_rad, log10(cross_section),'redx')
+
+%%
+% Optimization
+eps = 1e-6;
+integrand       = @(r, X) rho_ch(X, r).*r.^2;
+total_charge    = @(X, E) (4*pi/p_e(E))*integral(@(r) integrand(X, r), 0, 1e-10);
+constraint      = @(X, E) ((Z_Ca40 - total_charge(X, E))/eps).^2;
+Xi2             = @(X, theta) sum(((cross_theo(E_250MeV, theta, X) - cross_section)./meas_error).^2,2);
+
+f = @(X, theta) Xi2(X, theta) + constraint(X, E_250MeV);
+X_fit = lsqcurvefit(f, X_0, theta_rad, hannas_very_good_idea);
+
+
 
 
 
