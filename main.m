@@ -1,10 +1,10 @@
 %% Constants
 global hbar q_e m_e c alpha eV millibarn_per_sr
 % Fundamental
-hbar = 6.62607004e-34/(2*pi);
-q_e = 1.60217662e-19;
-m_e = 9.109e-31;
-c = 2.9979e8;
+hbar  = 6.62607004e-34/(2*pi);
+q_e   = 1.60217662e-19;
+m_e   = 9.109e-31;
+c     = 2.9979e8;
 alpha = 1/137;
 
 % Unit conversion

@@ -50,11 +50,13 @@ plot(theta_vect, log(cross_section_theo))
 integrand = @(X, r) rho_ch(X, r).*r.^2;
 total_charge = @(X) (4*pi/p_e)*integral(@(r) integrand(X, r), 0, 1e-10);
 
+X_0 = [q_e*0.073463e45, 4e-15, 0.1e-15];
+total_charge(X_0)
+
+%%
 eps = 1e-6;
 constraint = @(X) ((Z_Ca40 - total_charge(X))/eps).^2;
 
-
-X_0 = [q_e*0.08e45, 4e-15, 0.1e-15];
 R = linspace(0, 5e-15, 100); 
 
 
@@ -64,11 +66,14 @@ plot(R, integrand(X_0, R));
 constraint(X_0)
 
 %%
-Xi2 = @(X, theta) sum(((cross_theo(E_experiment, theta, X) - cross_section)./meas_error).^2);
+Xi2 = @(X, theta) ((cross_theo(E_experiment, theta, X) - cross_section)./meas_error).^2;
 
-f = @(X, theta) Xi2(X, theta) + constraint(X);
+Xi2(X_0,theta_rad)
 
-X_fit = lsqcurvefit(f, X_0, theta.', cross_section)
+% f = @(X, theta) Xi2(X, theta) + constraint(X);
+% 
+% X_fit = lsqcurvefit(f, X_0, theta.', cross_section.');
+
 
 %% Test fsolve
 funhandle = @(X) X(2) + X(1)
