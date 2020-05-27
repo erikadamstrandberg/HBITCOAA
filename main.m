@@ -1,4 +1,5 @@
 %% Constants
+global hbar q_e m_e c alpha
 % Fundamental
 hbar = 6.62607004e-34/(2*pi);
 q_e = 1.60217662e-19;
@@ -15,14 +16,19 @@ gamma = @(E) E/(m_e*c^2);
 v = @(E) c*sqrt(1 - 1./gamma(E).^2);
 beta = @(E) v(E)/c;
 
-% Experiment
-Z_Ca40 = 20;
-Z_e = 1;
-E_250MeV = 250e6*eV;
+% Measurement data
 theta = load("data/theta.tsv");
 theta_rad = theta*pi/180;
 cross_section = load("data/cross_section.tsv");
 meas_error = load("data/meas_error.tsv");
+
+% Experiment
+Z_Ca40 = 20;
+Z_e = 1;
+E_250MeV = 250e6*eV;
+
+% Used for passing data to functions
+data = [theta_rad, cross_section, meas_error, Z_Ca40, Z_e, E_250MeV];
 
 %% Proton density and fitting vector
 % Proton density that we want to optimize
