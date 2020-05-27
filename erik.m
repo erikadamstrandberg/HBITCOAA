@@ -8,7 +8,7 @@ alpha = 1/137;
 
 % Unit conversion
 eV = 1.60217662e-19;
-millibarn_per_sr = 1e31/(2*pi);
+millibarn_per_sr = 1e31*2*pi;
 
 % Functions
 gamma = @(E) E/(m_e*c^2);

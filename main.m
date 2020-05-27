@@ -1,5 +1,5 @@
 %% Constants
-global hbar q_e m_e c alpha
+global hbar q_e m_e c alpha eV millibarn_per_sr
 % Fundamental
 hbar = 6.62607004e-34/(2*pi);
 q_e = 1.60217662e-19;
@@ -28,7 +28,8 @@ Z_e = 1;
 E_250MeV = 250e6*eV;
 
 % Used for passing data to functions
-data = [theta_rad, cross_section, meas_error, Z_Ca40, Z_e, E_250MeV];
+data = [theta_rad, cross_section, meas_error];
+exp_values = [Z_Ca40, Z_e, E_250MeV];
 
 %% Proton density and fitting vector
 % Proton density that we want to optimize
@@ -61,8 +62,8 @@ q_diff = @(E, theta) sqrt(4*p_e(E).^2.*sin(theta/2).^2);
 
 % Form factor integral broken into two pieces
 form_const      = @(E, theta) 4*pi*hbar./(Z_Ca40*q_diff(E,theta)*q_e);
-integrand       = @(X, r, E, theta) r.*rho_ch(X, r).*sin(q_diff(E, theta).*r/hbar);
-form_integral   = @(X, E, theta) integral(@(r) integrand(X, r, E, theta), 0, 100e-10,'ArrayValued',true);
+form_integrand       = @(X, r, E, theta) r.*rho_ch(X, r).*sin(q_diff(E, theta).*r/hbar);
+form_integral   = @(X, E, theta) integral(@(r) form_integrand(X, r, E, theta), 0, 100e-10,'ArrayValued',true);
 formfactor      = @(X, E, theta) form_integral(X, E, theta).*form_const(E_250MeV, theta);
 
 % The Rutherford and Mott cross-sections
@@ -77,3 +78,44 @@ figure(2)
 clf; hold on;
 plot(theta_rad, log10(cross_theo(E_250MeV,theta_rad,X_0)*millibarn_per_sr),'black')
 plot(theta_rad, log10(cross_section),'redx')
+
+%% Optimization
+
+% from erik.m
+eps = 1e-6;
+charge_integrand    = @(X, r) rho_ch(X, r).*r.^2; 
+total_charge        = @(X, E) (4*pi/p_e(E))*integral(@(r) charge_integrand(X, r), 0, 1e-10); 
+constraint          = @(X, E) ((Z_Ca40 - total_charge(X, E))/eps).^2;
+
+%Xi2                 = @(X, theta) ((cross_theo(E_250MeV, theta, X)*millibarn_per_sr - cross_section)./meas_error).^2;
+%Xi2                 = @(X) sum(((cross_theo(E_250MeV, theta_rad, X) - cross_section)./meas_error).^2);
+
+%f = @(X, theta) Xi2(X, theta) % + constraint(X, E_250MeV); 
+
+%sol = fun(X_0, rho_ch, p_e, cross_theo, data, exp_values, millibarn_per_sr);
+X_fit = fsolve(@(X) fun(X, rho_ch, p_e, cross_theo, data, exp_values, millibarn_per_sr), X_0)
+
+
+
+
+%% lsqcurvefit
+f = @(X, theta) cross_theo(E_250MeV, theta, X)*millibarn_per_sr;
+X_fit = lsqcurvefit(f, X_0, theta_rad, cross_section);
+
+X_fit(2)
+X_0(2)
+
+%%
+hej = fun(X_0, E_250MeV)
+
+%function F = fun(X, E)
+%eps = 1e-6;
+%integrand       = @(r, X) rho_ch(X, r).*r.^2;
+%total_charge    = @(X, E) (4*pi/p_e(E))*integral(@(r) integrand(X, r), 0, 1e-10);
+%constraint      = @(X, E) ((Z_Ca40 - total_charge(X, E))/eps).^2;
+%Xi2             = @(X, theta) sum(((cross_theo(E_250MeV, theta, X) - cross_section)./meas_error).^2,2);
+
+%F(1) = Xi2
+%F(2) = constraint
+%end
+

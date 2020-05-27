@@ -70,6 +70,27 @@ f = @(X, theta) Xi2(X, theta) + constraint(X);
 
 X_fit = lsqcurvefit(f, X_0, theta.', cross_section)
 
+%% Test fsolve
+funhandle = @(X) X(2) + X(1)
 
+X_0 = [2, 3];
+sol = test_fun(X_0, funhandle)
+
+X_fit = fsolve(@(X) test_fun(X, funhandle), X_0)
+
+function F = test_fun(X_0, funhandle) %rho_ch, p_e, cross_theo, data, exp_values)
+
+%eps = 1e-6;
+%integrand       = @(X, r) rho_ch(X, r).*r.^2;
+%total_charge    = @(X, E) (4*pi/p_e(E))*integral(@(r) integrand(X, r), 0, 1e-10);
+%constraint      = @(X) ((exp_values(1) - total_charge(X, exp_values(3)))/eps).^2;
+
+Xi2             = @(X) -X(1)^2 + X(2)*funhandle(X);
+
+F  = Xi2(X_0);
+
+%F(1) = constraint(X_0);
+%F(2) = Xi2(X_0);
+end
 
 
