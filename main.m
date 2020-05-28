@@ -42,7 +42,7 @@ rho_ch = @(X, r) X(1)./(1 + exp((r-X(2))./X(3)));
 % b sharpness of the falls off
 rho_0 = q_e*0.08e45;
 a_0 = 4e-15;  
-b_0 = 0.1e-15;
+b_0 = 1.6e-15;
 X_0 = [rho_0, a_0, b_0];
 
 % Plot of the proton desnsity with the initial guesses
@@ -51,7 +51,7 @@ clf; hold on;
 r = linspace(0,8,1000)*1e-15;
 plot(r, rho_ch(X_0, r))
 
-%% Theoretical cross-section
+% Theoretical cross-section
 % Relativistic kinetic energy for a electron
 p_e = @(E) sqrt((E/c).^2 - m_e^2*c^2); 
 
@@ -62,7 +62,7 @@ q_diff = @(E, theta) sqrt(4*p_e(E).^2.*sin(theta/2).^2);
 
 % Form factor integral broken into two pieces
 form_const      = @(E, theta) 4*pi*hbar./(Z_Ca40*q_diff(E,theta)*q_e);
-form_integrand       = @(X, r, E, theta) r.*rho_ch(X, r).*sin(q_diff(E, theta).*r/hbar);
+form_integrand  = @(X, r, E, theta) r.*rho_ch(X, r).*sin(q_diff(E, theta).*r/hbar);
 form_integral   = @(X, E, theta) integral(@(r) form_integrand(X, r, E, theta), 0, 100e-10,'ArrayValued',true);
 formfactor      = @(X, E, theta) form_integral(X, E, theta).*form_const(E_250MeV, theta);
 
@@ -76,46 +76,16 @@ cross_theo      = @(E, theta, X) cross_mott(E_250MeV, theta_rad).*abs(formfactor
 
 figure(2)
 clf; hold on;
-plot(theta_rad, log10(cross_theo(E_250MeV,theta_rad,X_0)*millibarn_per_sr),'black')
-plot(theta_rad, log10(cross_section),'redx')
+plot(theta_rad, log10(cross_theo(E_250MeV,theta_rad,X_0)),'black')
+plot(theta_rad, log10(cross_section/millibarn_per_sr),'redx')
 
-%% Optimization
+%Optimization
 
-% from erik.m
-eps = 1e-6;
-charge_integrand    = @(X, r) rho_ch(X, r).*r.^2; 
-total_charge        = @(X, E) (4*pi/p_e(E))*integral(@(r) charge_integrand(X, r), 0, 1e-10); 
-constraint          = @(X, E) ((Z_Ca40 - total_charge(X, E))/eps).^2;
+options = optimoptions('fsolve','Algorithm','levenberg-marquardt','Display','iter');
+X_star = fsolve(@(X) optimize_X(X_0, rho_ch, p_e, cross_theo, data, exp_values, millibarn_per_sr), X_0, options);
 
-%Xi2                 = @(X, theta) ((cross_theo(E_250MeV, theta, X)*millibarn_per_sr - cross_section)./meas_error).^2;
-%Xi2                 = @(X) sum(((cross_theo(E_250MeV, theta_rad, X) - cross_section)./meas_error).^2);
+fprintf("rho before: " + X_0(1) + " rho after: " + X_star(1) +"\n")
+fprintf("a before: " + X_0(2) + " a after: " + X_star(2) +"\n")
+fprintf("b before: " + X_0(3) + " b after: " + X_star(3) +"\n")
 
-%f = @(X, theta) Xi2(X, theta) % + constraint(X, E_250MeV); 
-
-%sol = fun(X_0, rho_ch, p_e, cross_theo, data, exp_values, millibarn_per_sr);
-X_fit = fsolve(@(X) fun(X, rho_ch, p_e, cross_theo, data, exp_values, millibarn_per_sr), X_0)
-
-
-
-
-%% lsqcurvefit
-f = @(X, theta) cross_theo(E_250MeV, theta, X)*millibarn_per_sr;
-X_fit = lsqcurvefit(f, X_0, theta_rad, cross_section);
-
-X_fit(2)
-X_0(2)
-
-%%
-hej = fun(X_0, E_250MeV)
-
-%function F = fun(X, E)
-%eps = 1e-6;
-%integrand       = @(r, X) rho_ch(X, r).*r.^2;
-%total_charge    = @(X, E) (4*pi/p_e(E))*integral(@(r) integrand(X, r), 0, 1e-10);
-%constraint      = @(X, E) ((Z_Ca40 - total_charge(X, E))/eps).^2;
-%Xi2             = @(X, theta) sum(((cross_theo(E_250MeV, theta, X) - cross_section)./meas_error).^2,2);
-
-%F(1) = Xi2
-%F(2) = constraint
-%end
 
