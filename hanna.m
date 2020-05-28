@@ -74,5 +74,35 @@ Xi2(X_0,theta_rad)
 % 
 % X_fit = lsqcurvefit(f, X_0, theta.', cross_section.');
 
+%%
+
+%% HANNAS OLD
+
+%% %%%%%%%%%%%  Optimization %%%%%%%%%%%%
+% optimize the constraint
+options = optimoptions('fsolve','Algorithm','levenberg-marquardt','Display','off');
+X_con = fsolve(@(X) optimize_constraint(X, rho_ch, exp_values, q_e, 1), X_0, options);
+
+% Check charge
+integrand       = @(X, r) rho_ch(X, r).*r.^2;
+total_charge    = @(X, E) (4*pi/q_e)*integral(@(r) integrand(X, r), 0, 20e-15);
+
+charge = total_charge(X_con, E_250MeV);
+fprintf("Total charge: " + charge + "\n")
+
+% optimize cross-section
+options = optimoptions('fsolve','Algorithm','levenberg-marquardt','Display','off');
+X_star = fsolve(@(X) optimize_X(X, rho_ch, cross_theo, data, exp_values, millibarn_per_sr, q_e), X_con, options);
+
+
+%%
+options_less_eps = optimoptions('fsolve','Algorithm','levenberg-marquardt', 'Display', 'iter', 'TolX', 1e-12);
+
+X_con = fsolve(@(X) optimize_constraint(X, rho_ch, exp_values, q_e, 1e-6), X_iter, options_less_eps);
+
+%%
+X_star = fsolve(@(X) optimize_X(X, rho_ch, cross_theo, data, exp_values, millibarn_per_sr, q_e), X_con, options_less_eps);
+
+
 
 
