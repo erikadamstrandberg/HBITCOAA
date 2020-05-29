@@ -106,3 +106,27 @@ X_star = fsolve(@(X) optimize_X(X, rho_ch, cross_theo, data, exp_values, milliba
 
 
 
+%%
+% for i=1:niter
+%     fprintf("Iteration " + i + "\n")
+%     
+%     X_con = fsolve(@(X) optimize_constraint(X, rho_ch, exp_values, q_e), X_iter, options_iter);
+%     X_star = fsolve(@(X) optimize_X(X, rho_ch, cross_theo, data, exp_values, millibarn_per_sr, q_e), X_con, options_iter);
+%     X_iter = X_star;
+%     
+% end
+% 
+% %%
+% % check optimized theoretic cross-section
+% figure(3)
+% clf; hold on;
+% plot(theta_rad, log10(cross_theo(E_250MeV,theta_rad,X_0)),'black')
+% plot(theta_rad, log10(cross_section/millibarn_per_sr),'redx')
+% plot(theta_rad, log10(cross_theo(E_250MeV,theta_rad,X_star)),'blue')
+% 
+% radius = rms_r(X_star, rho_ch, exp_values, q_e)
+% 
+% figure(4)
+% clf; hold on;
+% r = linspace(0,8,1000)*1e-15;
+% plot(r, rho_ch(X_star, r))
