@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------
 % Creates the function to be optimized with lsqcurvefit
 % ----------------------------------------------------------------------
-function F = optimize_lsq(X_0, xdata, rho_ch, cross_theo, data, exp_values, eps_charge, millibarn, q_e)
+function F = optimize_lsq(X_0, xdata, rho_ch, cross_theo, data, exp_values, eps_charge, upper_limit, millibarn, q_e)
 % Arguments:
 %
 %   X_0                     = initial guesses         [rho_0, a_0, b_0]
@@ -10,7 +10,8 @@ function F = optimize_lsq(X_0, xdata, rho_ch, cross_theo, data, exp_values, eps_
 %   cross_theo(X, E, theta) = calculates theoretical cross-section
 %   data                    = data from measurement
 %   exp_values              = values used in experiment
-%   eps_charge              = Weight for the conservation of charge constraint
+%   eps_charge              = weight for the conservation of charge constraint
+%   upper_limit             = upper limit for integration
 
 % Unpack measurement and experiment values
 meas_error = data(:,3);
@@ -18,7 +19,7 @@ theta_rad = xdata(1:length(meas_error));
 E_250MeV = exp_values(3);
 
 integrand       = @(X, r) rho_ch(X, r).*r.^2;
-total_charge    = @(X) (4*pi/q_e)*integral(@(r) integrand(X, r), 0, 100e-15);
+total_charge    = @(X) (4*pi/q_e)*integral(@(r) integrand(X, r), 0, upper_limit);
 constraint      = @(X) total_charge(X)/eps_charge;
 Xi2             = @(X, theta, meas_error) cross_theo(X, E_250MeV, theta)./(meas_error*millibarn);
 

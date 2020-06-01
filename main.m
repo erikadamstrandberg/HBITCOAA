@@ -36,6 +36,11 @@ E_250MeV = 250*mega*eV; % Energy in electron beam
 data       = [theta_rad, cross_section, meas_error];
 exp_values = [Z_Ca40, Z_e, E_250MeV];
 
+% Upper limit us for integration
+% It is possible to set a fixed upper limit for all integrals in this
+% assignment since the all have a exponentially decaying term
+upper_limit = 100e-15;
+
 % Making pretty figures
 In = 'Interpreter';
 La = 'Latex';
@@ -81,7 +86,7 @@ q_diff = @(E, theta) sqrt(4*p_e(E).^2*sin(theta/2).^2);
 % The form factor
 form_const      = @(E, theta) 4*pi*hbar./(Z_Ca40*q_e*q_diff(E, theta));
 form_integrand  = @(X, r, E, theta) r.*rho_ch(X, r).*sin(q_diff(E, theta).*r/hbar);
-form_integral   = @(X, E, theta) integral(@(r) form_integrand(X, r, E, theta), 0, 100e-15,'ArrayValued',true);
+form_integral   = @(X, E, theta) integral(@(r) form_integrand(X, r, E, theta), 0, upper_limit,'ArrayValued',true);
 formfactor      = @(X, E, theta) form_integral(X, E, theta).*form_const(E, theta);
 
 % The Rutherford and Mott cross-sections
@@ -115,7 +120,9 @@ options_lsq = optimoptions('lsqcurvefit','Algorithm',    'levenberg-marquardt',.
                                          'TolX',         1e-20);
 
 % Optimizes optimize_lsq for X_0.
-X_star = lsqcurvefit(@(X,xdata) optimize_lsq(X, xdata, rho_ch, cross_theo, data, exp_values, eps_charge,...
+X_star = lsqcurvefit(@(X,xdata) optimize_lsq(X, xdata, rho_ch, cross_theo, data, exp_values,...
+                                eps_charge,...
+                                upper_limit,...
                                 millibarn, q_e),...
                                 X_0,...
                                 xdata,...
@@ -128,12 +135,12 @@ X_star_real = X_star./X_scale;  % Scale the optimzied parameters to find the "re
 % Plot and check the theoretic cross-section with X_star
 % Calculate the found rms charge
 integrand       = @(X, r) r.^4.*rho_ch(X, r);
-radius_squared  = (4*pi/(exp_values(1)*q_e))*integral(@(r) integrand(X_star, r), 0, 100e-15);
+radius_squared  = (4*pi/(exp_values(1)*q_e))*integral(@(r) integrand(X_star, r), 0, upper_limit);
 radius_X_star   = sqrt(radius_squared);
 
 % Calculate the total charge with X_star 
 integrand       = @(X, r) r.^2.*rho_ch(X, r);
-total_charge    = @(X) (4*pi/q_e)*integral(@(r) integrand(X, r), 0, 100e-15);
+total_charge    = @(X) (4*pi/q_e)*integral(@(r) integrand(X, r), 0, upper_limit);
 charge_X_star   = total_charge(X_star);
 
 % Plot the cross-section with the optimized charge distriutions vs the 
